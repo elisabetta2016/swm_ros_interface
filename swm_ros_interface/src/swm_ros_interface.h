@@ -11,8 +11,8 @@
 #include <string.h>
 #include <sys/time.h>
 
-//UNIBO
-#include "camera_handler_sherpa/Camera.h"
+//Messages
+#include <custom_msgs/gnssSample.h>
 
 extern "C" {
 	#include "swmzyre.h"
@@ -41,7 +41,8 @@ class SwmRosInterfaceNodeClass {
 		//---Callbacks
 		void readGeopose_publishSwm(const geographic_msgs::GeoPose::ConstPtr& msg);
 		void readGeopose_publishSwm_wasp(const geographic_msgs::GeoPose::ConstPtr& msg);
-		void readCameraObservations_publishSwm(const camera_handler_sherpa::Camera::ConstPtr& msg);
+    void readGeopose_publishSwm_donkey(const custom_msgs::gnssSample::ConstPtr& msg);
+    //void readCameraObservations_publishSwm(const camera_handler_sherpa::Camera::ConstPtr& msg);
 		//---
 
 	protected:
@@ -51,6 +52,8 @@ class SwmRosInterfaceNodeClass {
 		ros::Subscriber subSelfGeopose_;
 		ros::Subscriber subWaspGeopose_;
 		ros::Subscriber subWaspCamera_;
+    ros::Subscriber subDonkeyGPS_;
+
 		ros::Publisher pubBgGeopose_;
 		std::vector<publishers_code> publishers;
 		std::vector<uint16_t> rate_publishers;
@@ -70,7 +73,7 @@ class SwmRosInterfaceNodeClass {
 		bool agent_initialized;
 		//
 
-		int rate;
+    double rate;
 		uint16_t counter_print;
 
 private:

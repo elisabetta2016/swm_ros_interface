@@ -19,6 +19,10 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 	//--
 	ns = ros::this_node::getNamespace();
 	string nodename = ros::this_node::getName();
+
+  subDonkeyGPS_ = _nh.subscribe("/mti/sensor/gnssPvt", 0, &SwmRosInterfaceNodeClass::readGeopose_publishSwm_donkey,this);
+
+
 	//---publishers (TO SWM)
 	if (_nh.hasParam(nodename + "/pub/publish_operator_geopose")) { //send the position of the bg to the SWM 
 		subSelfGeopose_ = _nh.subscribe("/CREATE/human_pose", 0, &SwmRosInterfaceNodeClass::readGeopose_publishSwm,this);
@@ -30,10 +34,12 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 		cout << "Subscribing: \t [wasp geopose]" << endl; 
 	}
 
+/*
 	if (_nh.hasParam(nodename + "/pub/wasp_images")) { //send the images data to the SWM 
 		//subWaspCamera_ = _nh.subscribe("camera_published", 0, &SwmRosInterfaceNodeClass::readCameraObservations_publishSwm,this);
 		cout << "Subscribing: \t [wasp camera]" << endl; 
 	}
+  */
 	//---
 	if (_nh.hasParam(nodename + "/sub/publish_operator_geopose")){
 		pubBgGeopose_ = _nh.advertise<geographic_msgs::GeoPose>("/bg/geopose",10);
@@ -42,7 +48,7 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 		counter_publishers.push_back(0);
 	} 
 
-	rate = 100;	//TODO maybe pick rate of node as twice the highest rate of publishers
+  rate = 0.5;	//TODO maybe pick rate of node as twice the highest rate of publishers
 
 	//gettimeofday(&tp, NULL);
 
@@ -55,7 +61,7 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
   }
   
   string ubx_conf_path(pPath);
-	ubx_conf_path += "/examples/zyre/swm_zyre_config.json"; //the json name could be a param
+  ubx_conf_path += "/examples/zyre/swm_zyre_donkey2.json"; //the json name could be a param
 	config = load_config_file(str2char(ubx_conf_path));//"swm_zyre_config.json");
 	
 	if (config == NULL) {
@@ -78,8 +84,8 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 		               			0, 0, 0, 1}; // y,x,z,1 remember this is column-major!
 	
 	//string agent_name = "busy_genius";
-	assert(add_agent(self, matrix, 0.0, str2char(ns) ));
-	
+  //assert(add_agent(self, matrix, 0.0, str2char(ns) ));
+  add_agent(self, matrix, 0.0, str2char(ns) );
 
 	cout << "NS: " << ns << endl;
 }
@@ -101,6 +107,7 @@ void SwmRosInterfaceNodeClass::readGeopose_publishSwm(const geographic_msgs::Geo
 }
 
 void SwmRosInterfaceNodeClass::readGeopose_publishSwm_wasp(const geographic_msgs::GeoPose::ConstPtr& msg){
+  // Mohsen Comments: I need to adapt it with rover, the structure remains the same
 	gettimeofday(&tp, NULL);
 	utcTimeInMiliSec = tp.tv_sec * 1000 + tp.tv_usec / 1000; //get current timestamp in milliseconds
 	//ros::Time time = ros::Time::now();	//TODO probably this is not system time but node time...to check
@@ -115,17 +122,17 @@ void SwmRosInterfaceNodeClass::readGeopose_publishSwm_wasp(const geographic_msgs
 	update_pose(self, matrix, utcTimeInMiliSec, str2char(ns) );
 }
 
-void SwmRosInterfaceNodeClass::readCameraObservations_publishSwm(const camera_handler_sherpa::Camera::ConstPtr& msg){
-	gettimeofday(&tp, NULL);
-	utcTimeInMiliSec = tp.tv_sec * 1000 + tp.tv_usec / 1000; //get current timestamp in milliseconds
-	double rot_matrix[9];
-	quat2DCM(rot_matrix, msg->geopose.orientation);
-	double matrix[16] = { rot_matrix[0], rot_matrix[1], rot_matrix[2], 0,
-						   					rot_matrix[3], rot_matrix[4], rot_matrix[5], 0,
-						   					rot_matrix[6], rot_matrix[7], rot_matrix[8], 0,
-						   					msg->geopose.position.latitude, msg->geopose.position.longitude, msg->geopose.position.altitude, 1}; // y,x,z,1 remember this is column-major!
-	//assert(add_image(self, matrix, utcTimeInMiliSec, str2char(ns), str2char(msg->path_photo)));		TODO uncomment when Sebastian solves
+void SwmRosInterfaceNodeClass::readGeopose_publishSwm_donkey(const custom_msgs::gnssSample::ConstPtr& msg)
+{
+  double rot_matrix[9] = {1,0,0,0,1,0,0,0,1}; // To Be Done
+  double matrix[16] = { rot_matrix[0], rot_matrix[1], rot_matrix[2], 0,
+                        rot_matrix[3], rot_matrix[4], rot_matrix[5], 0,
+                        rot_matrix[6], rot_matrix[7], rot_matrix[8], 0,
+                        msg->latitude, msg->longitude, msg->hEll, 1};
+  update_pose(self, matrix, utcTimeInMiliSec, str2char(ns) );
+  ROS_INFO("Sending donkey pose to SWM");
 }
+
 
 
 void quat2DCM(double (&rot_matrix)[9], geometry_msgs::Quaternion quat){
@@ -174,7 +181,9 @@ void SwmRosInterfaceNodeClass::main_loop()
 					break;
 			}						
 		}
-	
+
+
+    //Mohsen Stuff
 
 
 		r.sleep();
@@ -191,7 +200,7 @@ void SwmRosInterfaceNodeClass::run() {
 
 	//start loop handle as a thread. The execution time is specified by rate parameter
 	boost::thread loop_handle_t( &SwmRosInterfaceNodeClass::main_loop, this);
-	ros::spin();
+  ros::spin();
 
 }
 

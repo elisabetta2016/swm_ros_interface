@@ -1,0 +1,9 @@
+<?xml version="1.0" ?>
+
+<launch>
+<group ns="rover0">
+	<node pkg="swm_ros_interface" type="swm_ros_interface" name="swm_ros_interface" output="screen">
+	</node>
+</group>
+	
+</launch>
