@@ -13,6 +13,8 @@
 
 //Messages
 #include <custom_msgs/gnssSample.h>
+#include <donkey_rover/Rover_Power_Data.h>
+#include <sherpa_msgs/SboxStatus.h>
 
 extern "C" {
 	#include "swmzyre.h"
@@ -42,6 +44,8 @@ class SwmRosInterfaceNodeClass {
 		void readGeopose_publishSwm(const geographic_msgs::GeoPose::ConstPtr& msg);
 		void readGeopose_publishSwm_wasp(const geographic_msgs::GeoPose::ConstPtr& msg);
     void readGeopose_publishSwm_donkey(const custom_msgs::gnssSample::ConstPtr& msg);
+    void readPower_publishSwm_donkey(const donkey_rover::Rover_Power_Data::ConstPtr& msg);
+
     //void readCameraObservations_publishSwm(const camera_handler_sherpa::Camera::ConstPtr& msg);
 		//---
 
@@ -53,8 +57,9 @@ class SwmRosInterfaceNodeClass {
 		ros::Subscriber subWaspGeopose_;
 		ros::Subscriber subWaspCamera_;
     ros::Subscriber subDonkeyGPS_;
-
+    ros::Subscriber subDonkeyPower_;
 		ros::Publisher pubBgGeopose_;
+    ros::Publisher pubSboxState;
 		std::vector<publishers_code> publishers;
 		std::vector<uint16_t> rate_publishers;
 		std::vector<uint16_t> counter_publishers;
@@ -70,6 +75,7 @@ class SwmRosInterfaceNodeClass {
 		char config_file;
 		json_t * config;
 		component_t *self;
+    sbox_status *sbox_stat;
 		bool agent_initialized;
 		//
 
@@ -77,7 +83,7 @@ class SwmRosInterfaceNodeClass {
 		uint16_t counter_print;
 
 private:
-
+    void readSWM_publishRos();
 };
 
 

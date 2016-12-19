@@ -19,9 +19,9 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 	//--
 	ns = ros::this_node::getNamespace();
 	string nodename = ros::this_node::getName();
-
-  subDonkeyGPS_ = _nh.subscribe("/mti/sensor/gnssPvt", 0, &SwmRosInterfaceNodeClass::readGeopose_publishSwm_donkey,this);
-
+  pubSboxState    = _nh.advertise<sherpa_msgs::SboxStatus>("/Sbox_status",1);
+  subDonkeyGPS_   = _nh.subscribe("/mti/sensor/gnssPvt", 0, &SwmRosInterfaceNodeClass::readGeopose_publishSwm_donkey,this);
+  subDonkeyPower_ = _nh.subscribe("/RoverPowerInfo", 0, &SwmRosInterfaceNodeClass::readPower_publishSwm_donkey,this);
 
 	//---publishers (TO SWM)
 	if (_nh.hasParam(nodename + "/pub/publish_operator_geopose")) { //send the position of the bg to the SWM 
@@ -34,12 +34,7 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 		cout << "Subscribing: \t [wasp geopose]" << endl; 
 	}
 
-/*
-	if (_nh.hasParam(nodename + "/pub/wasp_images")) { //send the images data to the SWM 
-		//subWaspCamera_ = _nh.subscribe("camera_published", 0, &SwmRosInterfaceNodeClass::readCameraObservations_publishSwm,this);
-		cout << "Subscribing: \t [wasp camera]" << endl; 
-	}
-  */
+
 	//---
 	if (_nh.hasParam(nodename + "/sub/publish_operator_geopose")){
 		pubBgGeopose_ = _nh.advertise<geographic_msgs::GeoPose>("/bg/geopose",10);
@@ -48,7 +43,7 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 		counter_publishers.push_back(0);
 	} 
 
-  rate = 0.5;	//TODO maybe pick rate of node as twice the highest rate of publishers
+  rate = 5;	//TODO maybe pick rate of node as twice the highest rate of publishers
 
 	//gettimeofday(&tp, NULL);
 
@@ -93,7 +88,7 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 void SwmRosInterfaceNodeClass::readGeopose_publishSwm(const geographic_msgs::GeoPose::ConstPtr& msg){
 	//ros::Time time = ros::Time::now();	//TODO probably this is not system time but node time...to check
 	//utcTimeInMiliSec = time.sec*1000000.0 + time.nsec/1000.0;
-	gettimeofday(&tp, NULL);
+  gettimeofday(&tp, NULL);
 	utcTimeInMiliSec = tp.tv_sec * 1000 + tp.tv_usec / 1000; //get current timestamp in milliseconds
 	double rot_matrix[9];
 	quat2DCM(rot_matrix, msg->orientation);
@@ -124,15 +119,49 @@ void SwmRosInterfaceNodeClass::readGeopose_publishSwm_wasp(const geographic_msgs
 
 void SwmRosInterfaceNodeClass::readGeopose_publishSwm_donkey(const custom_msgs::gnssSample::ConstPtr& msg)
 {
+  gettimeofday(&tp, NULL);
+  utcTimeInMiliSec = tp.tv_sec * 1000 + tp.tv_usec / 1000;
   double rot_matrix[9] = {1,0,0,0,1,0,0,0,1}; // To Be Done
   double matrix[16] = { rot_matrix[0], rot_matrix[1], rot_matrix[2], 0,
                         rot_matrix[3], rot_matrix[4], rot_matrix[5], 0,
                         rot_matrix[6], rot_matrix[7], rot_matrix[8], 0,
                         msg->latitude, msg->longitude, msg->hEll, 1};
   update_pose(self, matrix, utcTimeInMiliSec, str2char(ns) );
-  ROS_INFO("Sending donkey pose to SWM");
+  //ROS_INFO("Sending donkey pose to SWM");
 }
 
+void SwmRosInterfaceNodeClass::readPower_publishSwm_donkey(const donkey_rover::Rover_Power_Data::ConstPtr& msg)
+{
+  gettimeofday(&tp, NULL);
+  utcTimeInMiliSec = tp.tv_sec * 1000 + tp.tv_usec / 1000;
+  ROS_INFO("BATTERY UPDATE");
+  string batt_status = "HIGH";
+  if(msg->Battery_Voltage < 51) batt_status = "MID";
+  if(msg->Battery_Voltage < 47) batt_status = "LOW";
+  add_battery(self, msg->Battery_Voltage,str2char(batt_status),utcTimeInMiliSec,str2char(ns));
+}
+
+void SwmRosInterfaceNodeClass::readSWM_publishRos()
+{
+   char* sbox_name = NULL;
+   if(get_sherpa_box_status(self, sbox_stat, sbox_name))
+   {
+     sherpa_msgs::SboxStatus sbox_msg;
+     sbox_msg.header.stamp = ros::Time::now();
+     sbox_msg.commandStep = sbox_stat->commandStep;
+     sbox_msg.completed = sbox_stat->completed;
+     sbox_msg.executeId = sbox_stat->executeId;
+     sbox_msg.idle = sbox_stat->idle;
+     sbox_msg.linActuatorPosition = sbox_stat->linActuatorPosition;
+     sbox_msg.waspDockLeft = sbox_stat->waspDockLeft;
+     sbox_msg.waspDockRight = sbox_stat->waspDockRight;
+     sbox_msg.waspLockedLeft = sbox_stat->waspLockedLeft;
+     sbox_msg.waspLockedRight = sbox_stat->waspLockedRight;
+     pubSboxState.publish(sbox_msg);
+   }
+   else
+     ROS_ERROR("acquiring Sbox status from SWM was unsuccessful");
+}
 
 
 void quat2DCM(double (&rot_matrix)[9], geometry_msgs::Quaternion quat){
@@ -164,6 +193,8 @@ void SwmRosInterfaceNodeClass::main_loop()
 		utcTimeInMiliSec = time.sec*1000000.0 + time.nsec/1000.0;
 
 		counter_print++;
+    readSWM_publishRos();
+
 		for (int i=0; i<publishers.size(); i++){
 			
 			counter_publishers[i]++;
@@ -184,8 +215,6 @@ void SwmRosInterfaceNodeClass::main_loop()
 
 
     //Mohsen Stuff
-
-
 		r.sleep();
 	}
 }
