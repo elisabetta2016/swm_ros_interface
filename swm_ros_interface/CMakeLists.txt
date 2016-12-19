@@ -8,6 +8,8 @@ find_package(catkin REQUIRED COMPONENTS
   roscpp
   std_msgs
   custom_msgs
+  donkey_rover
+  sherpa_msgs
   #camera_handler_sherpa
 )
 
@@ -126,7 +128,7 @@ include_directories(
 # )
 
 include_directories( 
-  /home/jcacace/External_SW/ubx_robotscenegraph/examples/zyre/
+  /home/mohsen/swm/ubx_robotscenegraph/examples/zyre/
   ${catkin_INCLUDE_DIRS}
   include
 )
@@ -138,12 +140,12 @@ include_directories(
 
 ## Declare a C++ executable
 add_executable(swm_ros_interface src/swm_ros_interface.cpp)
-
+add_executable(swm_test src/test_sbox.cpp)
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 #add_dependencies(swm_ros_interface ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(${PROJECT_NAME} /usr/local/lib/libswmzyre.so ${catkin_LIBRARIES} )
-
+target_link_libraries(swm_test /usr/local/lib/libswmzyre.so ${catkin_LIBRARIES} )
 
