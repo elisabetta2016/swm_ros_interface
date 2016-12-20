@@ -4,6 +4,5 @@
 <group ns="rover0">
 	<node pkg="swm_ros_interface" type="swm_ros_interface" name="swm_ros_interface" output="screen">
 	</node>
-<group/>
-	
+</group>
 </launch>

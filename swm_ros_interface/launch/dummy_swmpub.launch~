@@ -1,0 +1,6 @@
+<?xml version="1.0" ?>
+
+<launch>
+	<node ns="sbox0" pkg="swm_ros_interface" type="swm_test" name="swm_test" output="screen">
+	</node>
+</launch>

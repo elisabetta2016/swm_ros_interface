@@ -37,9 +37,10 @@ char* str2char( string str ) {
 class swmAgentTester
 {
 public:
-   swmAgentTester(string mode)
+   swmAgentTester(string mode, ros::NodeHandle& node)
    {
-     ns = mode;
+
+     node = nh_;
      rate = 5.0;
      //---SWM
      char* pPath;
@@ -50,10 +51,10 @@ public:
        exit(0);
      }
      string ubx_conf_path(pPath);
-     if(mode.compare("sbox_0") == 0)
+     if(mode.compare("sbox0") == 0)
      {
 
-       ubx_conf_path += "/examples/zyre/swm_zyre_donkey2.json"; //the json name could be a param
+       ubx_conf_path += "/examples/zyre/swm_zyre_sbox.json"; //the json name could be a param
        config = load_config_file(str2char(ubx_conf_path));//"swm_zyre_config.json");
 
      }
@@ -87,13 +88,13 @@ public:
    void set_sbox()
    {
      //Just an example
-     sbox_stat->completed = 0;
-     sbox_stat->idle = 1;
-     sbox_stat->executeId = 31;
-     sbox_stat->waspDockLeft = false;
-     sbox_stat->waspDockRight = true;
-     sbox_stat->waspLockedLeft = false;
-     sbox_stat->waspLockedRight = true;
+     sbox_stat.completed = 0;
+     sbox_stat.idle = 1;
+     sbox_stat.executeId = 31;
+     sbox_stat.waspDockLeft = false;
+     sbox_stat.waspDockRight = true;
+     sbox_stat.waspLockedLeft = false;
+     sbox_stat.waspLockedRight = true;
    }
 
    void run()
@@ -105,12 +106,12 @@ public:
      geographic_msgs::GeoPose gp;
      //---
 
-     while( ros::ok() ) {
+     set_sbox();
+     while( nh_.ok() ) {
 
        ros::Time time = ros::Time::now();	//TODO probably this is not system time but node time...to check
        utcTimeInMiliSec = time.sec*1000000.0 + time.nsec/1000.0;
-       set_sbox();
-       add_sherpa_box_status(self,*sbox_stat,str2char("sbox_0"));
+       add_sherpa_box_status(self,sbox_stat,str2char("sbox0")); // the code crashes here, invalid pointer
 
        //Mohsen Stuff
        ros::spinOnce();
@@ -120,6 +121,7 @@ public:
 
 
 protected:
+   ros::NodeHandle nh_;
    double utcTimeInMiliSec;
    double rate;
    string ns;
@@ -132,7 +134,7 @@ protected:
    char config_file;
    json_t * config;
    component_t *self;
-   sbox_status *sbox_stat;
+   sbox_status sbox_stat;
    bool agent_initialized;
    //
 
@@ -142,9 +144,11 @@ private:
 };
 
 int main(int argc, char **argv) {
-  string mode = "sbox_0";
-  ros::init(argc, argv, "sobx_test");
-  swmAgentTester tester(mode);
+
+  ros::init(argc, argv, "sbox_test");
+  string mode = "sbox0";
+  ros::NodeHandle node;
+  swmAgentTester tester(mode,node);
   tester.run();
 
   return 0;
