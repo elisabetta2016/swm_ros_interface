@@ -54,7 +54,7 @@ public:
      if(mode.compare("sbox0") == 0)
      {
 
-       ubx_conf_path += "/examples/zyre/swm_zyre_sbox.json"; //the json name could be a param
+       ubx_conf_path += "/examples/zyre/swm_zyre_sbox.json"; //the json name could be a param; it should be ;-)
        config = load_config_file(str2char(ubx_conf_path));//"swm_zyre_config.json");
 
      }
@@ -111,7 +111,8 @@ public:
 
        ros::Time time = ros::Time::now();	//TODO probably this is not system time but node time...to check
        utcTimeInMiliSec = time.sec*1000000.0 + time.nsec/1000.0;
-       add_sherpa_box_status(self,sbox_stat,str2char("sbox0")); // the code crashes here, invalid pointer
+       if(!add_sherpa_box_status(self,sbox_stat,str2char("sbox0")))// the code crashes here, invalid pointer
+          ROS_ERROR("could not add sbox data");
 
        //Mohsen Stuff
        ros::spinOnce();
