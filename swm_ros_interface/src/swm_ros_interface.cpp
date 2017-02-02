@@ -54,8 +54,10 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
   	ROS_ERROR("UBX_ROBOTSCENEGRAPH_DIR env not set!");
   	exit(0);
   }
-  
+  json_t * config_sbox;
   string ubx_conf_path(pPath);
+  config_sbox = load_config_file(str2char(ubx_conf_path +
+               "/examples/zyre/swm_zyre_sbox.json" ));
   ubx_conf_path += "/examples/zyre/swm_zyre_donkey2.json"; //the json name could be a param
 	config = load_config_file(str2char(ubx_conf_path));//"swm_zyre_config.json");
 	
@@ -65,9 +67,17 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 	}	
 	self = new_component(config);
 	if (self == NULL) {
-		ROS_INFO("Unable to initialize component");
+    ROS_FATAL("Unable to initialize component");
 		return;
 	}
+
+  sbox_component = new_component(config_sbox);
+  if (sbox_component == NULL) {
+    ROS_FATAL("Unable to initialize component");
+    return;
+  }
+
+
 	//---
 
 	agent_initialized = false;
@@ -81,7 +91,8 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
 	//string agent_name = "busy_genius";
   //assert(add_agent(self, matrix, 0.0, str2char(ns) ));
   add_agent(self, matrix, 0.0, str2char(ns) );
-
+  // adding sbox
+  add_agent(sbox_component,matrix, 0.0, str2char(ns));
 	cout << "NS: " << ns << endl;
 }
 
@@ -143,8 +154,8 @@ void SwmRosInterfaceNodeClass::readPower_publishSwm_donkey(const donkey_rover::R
 
 void SwmRosInterfaceNodeClass::readSWM_publishRos()
 {
-   char* sbox_name = NULL;
-   if(get_sherpa_box_status(self, sbox_stat, sbox_name))
+   char* sbox_name = NULL;//str2char("sherpa_box"); // NULL
+   if(get_sherpa_box_status(sbox_component, sbox_stat, sbox_name))
    {
      sherpa_msgs::SboxStatus sbox_msg;
      sbox_msg.header.stamp = ros::Time::now();
