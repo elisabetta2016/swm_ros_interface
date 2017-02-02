@@ -92,7 +92,7 @@ SwmRosInterfaceNodeClass::SwmRosInterfaceNodeClass() {
   //assert(add_agent(self, matrix, 0.0, str2char(ns) ));
   add_agent(self, matrix, 0.0, str2char(ns) );
   // adding sbox
-  add_agent(sbox_component,matrix, 0.0, str2char(ns));
+  add_agent(sbox_component,matrix, 0.0, str2char("sherpa_box"));
 	cout << "NS: " << ns << endl;
 }
 
@@ -155,19 +155,19 @@ void SwmRosInterfaceNodeClass::readPower_publishSwm_donkey(const donkey_rover::R
 void SwmRosInterfaceNodeClass::readSWM_publishRos()
 {
    char* sbox_name = NULL;//str2char("sherpa_box"); // NULL
-   if(get_sherpa_box_status(sbox_component, sbox_stat, sbox_name))
+   if(get_sherpa_box_status(sbox_component, &sbox_stat, sbox_name))
    {
      sherpa_msgs::SboxStatus sbox_msg;
      sbox_msg.header.stamp = ros::Time::now();
-     sbox_msg.commandStep = sbox_stat->commandStep;
-     sbox_msg.completed = sbox_stat->completed;
-     sbox_msg.executeId = sbox_stat->executeId;
-     sbox_msg.idle = sbox_stat->idle;
-     sbox_msg.linActuatorPosition = sbox_stat->linActuatorPosition;
-     sbox_msg.waspDockLeft = sbox_stat->waspDockLeft;
-     sbox_msg.waspDockRight = sbox_stat->waspDockRight;
-     sbox_msg.waspLockedLeft = sbox_stat->waspLockedLeft;
-     sbox_msg.waspLockedRight = sbox_stat->waspLockedRight;
+     sbox_msg.commandStep = sbox_stat.commandStep;
+     sbox_msg.completed = sbox_stat.completed;
+     sbox_msg.executeId = sbox_stat.executeId;
+     sbox_msg.idle = sbox_stat.idle;
+     sbox_msg.linActuatorPosition = sbox_stat.linActuatorPosition;
+     sbox_msg.waspDockLeft = sbox_stat.waspDockLeft;
+     sbox_msg.waspDockRight = sbox_stat.waspDockRight;
+     sbox_msg.waspLockedLeft = sbox_stat.waspLockedLeft;
+     sbox_msg.waspLockedRight = sbox_stat.waspLockedRight;
      pubSboxState.publish(sbox_msg);
    }
    else

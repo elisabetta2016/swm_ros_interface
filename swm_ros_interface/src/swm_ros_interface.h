@@ -76,7 +76,7 @@ class SwmRosInterfaceNodeClass {
 		json_t * config;
 		component_t *self;
     component_t *sbox_component;
-    sbox_status *sbox_stat;
+    sbox_status sbox_stat;
 		bool agent_initialized;
 		//
 
